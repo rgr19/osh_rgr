@@ -102,9 +102,13 @@ function colorize() {
 }
 
 
+
+
 function prompt_command() {
 
-  local RC="$?"
+  export EXIT_STATUS=$?
+
+  local RC="${EXIT_STATUS}"
 
   # Set return status color
   if [[ ${RC} == 0 ]]; then
@@ -134,22 +138,43 @@ function prompt_command() {
    LL0="${repo}  ${py}"
   fi
 
-	local clock="${bold_black}[\A]"
+  local clock="${bold_black}[\A]"
 	local LL0="${bold_cyan}┌${LL0}  $(ip_prompt_info)  $(get_dir_perm_own)  %:$(get_jobs) |$(get_jobs_pids)|"
-  local LL1="${bold_cyan}├${uh} ${dir}  ${ret_status}?:${RC}  ${bold_black} t:${EXEC_TIME}  "
+  local LL1="${bold_cyan}├${uh} ${dir}  ${ret_status}?:${RC} $:\$  ${bold_black} "
 
 
-	local prompt="${bold_black} >>> \$ "
+	local prompt="${bold_black} >>> λ "
 	local LL2="${bold_cyan}└${clock}${prompt}"
 
-  PS1="\n${LL0}\n${LL1}\n${LL2}${bold_blue}"
-
+  PS1="\n${LL0}\n${LL1}\n${LL2}${blue}"
 
 }
 
 
 safe_append_prompt_command prompt_command
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+source $DIR/.bash-preexec.sh || true
 
+function logit {
+local RC=$EXIT_STATUS
+python $DIR/logger.py "$@"
+export EXIT_STATUS=$RC
+}
 
+preexec() { 
+  
+if [ ! -z "$@" ]; then
+  logit -i "BEGIN  : $@"
+  export ANY_STDIN=$@
+fi
+
+}
+
+precmd() { 
+  if [ ! -z "${ANY_STDIN}" ]; then
+      logit -x $EXIT_STATUS -i "END [${EXIT_STATUS}] : ${ANY_STDIN}"
+  fi
+  unset ANY_STDIN
+}
