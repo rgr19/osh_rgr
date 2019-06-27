@@ -125,18 +125,26 @@ function prompt_command() {
 #	fi
 
 	local dir="${bold_white}${PWD}"
-
+  local LL0=""
 	local repo="$(scm_prompt_info)"
-	local py="${bold_black}($(python_version_prompt))"
+  local py="${bold_black}($(python_version_prompt))"
+  if [ -z "$repo" ]; then
+    LL0="${py}"
+  else
+   LL0="${repo}  ${py}"
+  fi
+
 	local clock="${bold_black}[\A]"
-	local LL0="${bold_cyan}┌${repo}  ${py}  $(ip_prompt_info)  $(get_dir_perm_own)  %:$(get_jobs) |$(get_jobs_pids)|"
-  local LL1="${bold_cyan}├${uh} ${dir}  ${ret_status}?:${RC}  "
+	local LL0="${bold_cyan}┌${LL0}  $(ip_prompt_info)  $(get_dir_perm_own)  %:$(get_jobs) |$(get_jobs_pids)|"
+  local LL1="${bold_cyan}├${uh} ${dir}  ${ret_status}?:${RC}  ${bold_black} t:${EXEC_TIME}  "
 
 
-	local prompt="${bold_black} >>> λ "
+	local prompt="${bold_black} >>> \$ "
 	local LL2="${bold_cyan}└${clock}${prompt}"
 
-        PS1="\n${LL0}\n${LL1}\n${LL2}${bold_blue}"
+  PS1="\n${LL0}\n${LL1}\n${LL2}${bold_blue}"
+
+
 }
 
 
