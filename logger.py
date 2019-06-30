@@ -1,11 +1,21 @@
-import os, sys
-import coloredlogs, logging
-import logging.config
-from optparse import OptionParser
+try:
+    import os, sys
+    import coloredlogs, logging
+    import logging.config
+    from optparse import OptionParser
+except Exception as err:
+    exit(0)
 
 if __name__ == '__main__':
 
+
     parser = OptionParser()
+    parser.add_option("-w",
+                      "--where",
+                      dest="where",
+                      default="both",
+                      help="Logging where (file, console, both)",
+                      metavar="WHERE")
     parser.add_option("-m",
                       "--mode",
                       dest="mode",
@@ -94,6 +104,16 @@ if __name__ == '__main__':
             }
         },
     }
+
+    if options.where == 'file':
+        loggingConfig['loggers']['']['handlers'] = ['file']
+        loggingConfig['formatters'].pop('colored_console')
+        loggingConfig['handlers'].pop('console')
+    elif options.where == 'console':
+        loggingConfig['loggers']['']['handlers'] = ['console']
+        loggingConfig['formatters'].pop('format_for_file')
+        loggingConfig['handlers'].pop('file')
+
 
     logging.config.dictConfig(loggingConfig)
     logger = logging.getLogger()

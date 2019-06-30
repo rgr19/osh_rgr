@@ -74,32 +74,32 @@ function dulcie_background() {
 function colorize() {
 
 
-    #!/bin/bash
+  #!/bin/bash
 
-    if [ "$1" == "--help" ] ; then
-      echo "Executes a command and colorizes all errors occured"
-      echo "Example: `basename ${0}` wget ..."
-      echo "(c) o_O Tync, ICQ# 1227-700, Enjoy!"
-      exit 0
-    fi
+  if [ "$1" == "--help" ] ; then
+    echo "Executes a command and colorizes all errors occured"
+    echo "Example: `basename ${0}` wget ..."
+    echo "(c) o_O Tync, ICQ# 1227-700, Enjoy!"
+    exit 0
+  fi
 
-    # Temp file to catch all errors
-    TMP_ERRS=$(mktemp)
+  # Temp file to catch all errors
+  TMP_ERRS=$(mktemp)
 
-    # Execute command
-    "$@" 2> >(while read line; do echo -e "\e[01;31m$line\e[0m" | tee --append $TMP_ERRS; done)
-    EXIT_CODE=$?
+  # Execute command
+  "$@" 2> >(while read line; do echo -e "\e[01;31m$line\e[0m" | tee --append $TMP_ERRS; done)
+  EXIT_CODE=$?
 
-    # Display all errors again
-    if [ -s "$TMP_ERRS" ] ; then
-      echo -e "\n\n\n\e[01;31m === ERRORS === \e[0m"
-      cat $TMP_ERRS
-    fi
-    rm -f $TMP_ERRS
+  # Display all errors again
+  if [ -s "$TMP_ERRS" ] ; then
+    echo -e "\n\n\n\e[01;31m === ERRORS === \e[0m"
+    cat $TMP_ERRS
+  fi
+  rm -f $TMP_ERRS
 
-    # Finish
-    exit $EXIT_CODE
-  }
+  # Finish
+  exit $EXIT_CODE
+}
 
 
 
@@ -116,38 +116,41 @@ function prompt_command() {
     ret_status="${bold_red}"
   fi
 
-    # Append new history lines to history file
-    history -a
+  # Append new history lines to history file
+  history -a
 
-    local uh="${bold_green}[\u@${bold_green}\h${bold_white}:"
-    #	echo PPID=$PPID
-    #	if [ "$PPID" == "1" ]; then
-    #	local dir="${bold_white}\w"
-    #	else
-    #	local dir="${black}file://${bold_white}${PWD}"
-    #	fi
+  local uh="${bold_green}[\u@${bold_green}\h${bold_white}:"
+  #	echo PPID=$PPID
+  #	if [ "$PPID" == "1" ]; then
+  #	local dir="${bold_white}\w"
+  #	else
+  #	local dir="${black}file://${bold_white}${PWD}"
+  #	fi
 
-    local dir="${bold_white}${PWD}"
-    local LL0=""
-    local repo="$(scm_prompt_info)"
-    local py="${bold_black}($(python_version_prompt))"
-    if [ -z "$repo" ]; then
-      LL0="${py}"
-    else
-      LL0="${repo}  ${py}"
-    fi
+  local dir="${bold_white}${PWD}"
+  local LL0=""
+  local repo="$(scm_prompt_info)"
+  local py="${bold_black}($(python_version_prompt))"
+  if [ -z "$repo" ]; then
+    LL0="${py}"
+  else
+    LL0="${repo}  ${py}"
+  fi
 
-    local clock="${bold_black}[\A]"
-    local LL0="${bold_cyan}┌${LL0}  $(ip_prompt_info)  $(get_dir_perm_own)  %:$(get_jobs) |$(get_jobs_pids)|"
-    local LL1="${bold_cyan}├${uh} ${dir}  ${ret_status}?:${RC} $:\$  ${bold_black} "
+  local clock="${bold_black}[\A]"
+  local LL0="${bold_cyan}┌${LL0}  $(ip_prompt_info)  $(get_dir_perm_own)  %:$(get_jobs) |$(get_jobs_pids)|"
+  local LL1="${bold_cyan}├${uh} ${dir}  ${ret_status}?:${RC} $:\$  ${bold_black} "
 
 
-    local prompt="${bold_black} >>> λ "
-    local LL2="${bold_cyan}└${clock}${prompt}"
+  local prompt="${bold_black} >>> λ "
+  local LL2="${bold_cyan}└${clock}${prompt}"
 
-    PS1="\n${LL0}\n${LL1}\n${LL2}${blue}"
-
-  }
+  if [ ! -z "$DISABLE_EXTRA" ]; then
+    PS1="${prompt}${blue}"
+  else 
+    PS1="${LL0}\n${LL1}\n${LL2}${blue}"
+  fi 
+}
 
 
 safe_append_prompt_command prompt_command
@@ -170,24 +173,47 @@ fi
 
 function logit {
   local RC=$EXIT_STATUS
+  if [ -z "$DISABLE_EXTRA" ]; then 
   python $DIR/logger.py "$@"
+else
+  python $DIR/logger.py "$@" > /dev/null 2>&1 
+  fi
   export EXIT_STATUS=$RC
 }
 
-preexec() { 
+preexec() {
+  local WHERE
+  if [ -z "$DISABLE_EXTRA" ]; then 
+    WHERE="both"
+  else
+    WHERE="file"
+  fi
+
+
+  unset ANY_STDIN
   if [ ! -z "$@" ]; then
-    logit -i "\$ BEGIN[?] $@"
+    logit -w $WHERE -i "\$ BEGIN[?] $@"
     export ANY_STDIN=$@
-    echo ">>>"
+    if [ -z "$DISABLE_EXTRA" ]; then 
+      echo ">>>"
+    fi
   fi
 }
 
 precmd() { 
-  if [ ! -z "${ANY_STDIN}" ]; then
-    echo "<<<"
-    logit -x $EXIT_STATUS -i "\$ END[${EXIT_STATUS}] ${ANY_STDIN}"
+  local WHERE
+  if [ -z "$DISABLE_EXTRA" ]; then 
+    WHERE="both"
+  else
+    WHERE="file"
   fi
-  unset ANY_STDIN
+
+  if [ ! -z "${ANY_STDIN}" ]; then
+    if [ -z "$DISABLE_EXTRA" ]; then 
+      echo "<<<"
+  fi
+    logit -w "$WHERE" -x $EXIT_STATUS -i "\$ END[${EXIT_STATUS}] ${ANY_STDIN}"
+  fi
 }
 
 
