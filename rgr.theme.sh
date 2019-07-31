@@ -22,8 +22,12 @@ function get_ip_info {
 	#local addrs=$(echo $addr | grep -Eo '[0-9\.]+' && echo ${myip})
 
  # not always working
- if ! (nc 1.1.1.1 53 -zv > /dev/null 2>&1); then echo "offline"; fi
- python $DIR/check_network.py
+
+ if ! (timeout 0.3 nc 1.1.1.1 53 -zv > /dev/null 2>&1); then 
+	echo "offline"; 
+ else
+	timeout 0.3 python $DIR/check_network.py
+ fi
 }
 
 
@@ -124,29 +128,32 @@ function prompt_command() {
 	#	local dir="${black}file://${bold_white}${PWD}"
 	#	fi
 
-	local dir="${bold_white}${PWD}"
-	local LL0=""
-	local repo="$(scm_prompt_info)"
-	local py="${bold_black}($(python_version_prompt))"
-	if [ -z "$repo" ]; then
-		LL0="${py}"
-	else
-		LL0="${repo}  ${py}"
-	fi
-
-	local clock="${bold_black}[\A]"
-	local LL0="${bold_cyan}┌${LL0}  $(ip_prompt_info)  $(get_dir_perm_own)  %:$(get_jobs) |$(get_jobs_pids)|"
-	local LL1="${bold_cyan}├${uh} ${dir}  ${ret_status}?:${RC} $:\$  ${bold_black} "
-
-
 	local prompt="${bold_black} >>> λ "
-	local LL2="${bold_cyan}└${clock}${prompt}"
 
 	if [ ! -z "$DISABLE_EXTRA" ]; then
+
 		PS1="${prompt}${cyan}"
+
 	else 
+
+		local dir="${bold_white}${PWD}"
+		local repo="$(scm_prompt_info)"
+		local py="${bold_black}($(python_version_prompt))"
+		local ip="$(ip_prompt_info)"
+    local LL0=""
+		if [ -z "$repo" ]; then
+			LL0="${py}"
+		else
+			LL0="${repo}  ${py}"
+		fi
+
+		local clock="${bold_black}[\A]"
+		local LL0="${bold_cyan}┌${LL0}  ${ip} $(get_dir_perm_own)  %:$(get_jobs) |$(get_jobs_pids)|"
+		local LL1="${bold_cyan}├${uh} ${dir}  ${ret_status}?:${RC} $:\$  ${bold_black} "
+		local LL2="${bold_cyan}└${clock}${prompt}"
+
 		PS1="${LL0}\n${LL1}\n${LL2}${blue}"
-	fi 
+	fi
 }
 
 
